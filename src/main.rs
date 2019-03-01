@@ -1,79 +1,23 @@
 extern crate termion;
-
+mod coord;
+mod screen;
+use crate::coord::Coord;
+use crate::screen::Screen;
 use std::collections::HashMap;
-use std::io::{stdin, stdout, Stdout, Write};
-use std::ops::Add;
-use std::ops::AddAssign;
-use termion::clear;
-use termion::cursor;
+use std::io::stdin;
 use termion::event::{Event, Key};
 use termion::input::TermRead;
-use termion::raw::{IntoRawMode, RawTerminal};
-use termion::screen::AlternateScreen;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct Coord {
-    x: i32,
-    y: i32,
-}
-
-impl Add for Coord {
-    type Output = Coord;
-    fn add(self, other: Coord) -> Coord {
-        Coord {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-impl AddAssign for Coord {
-    fn add_assign(&mut self, other: Coord) {
-        *self = Coord {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        };
-    }
-}
-
-struct Screen {
-    screen: AlternateScreen<RawTerminal<Stdout>>,
-}
-
-impl Screen {
-    fn new() -> Screen {
-        Screen {
-            screen: AlternateScreen::from(stdout().into_raw_mode().unwrap()),
-        }
-    }
-
-    fn goto(&mut self, coord: &Coord) {
-        write!(
-            self.screen,
-            "{}",
-            cursor::Goto(coord.x as u16 + 1, coord.y as u16 + 1)
-        );
-    }
-
-    fn clear(&mut self) {
-        write!(self.screen, "{}", clear::All);
-        write!(self.screen, "{}", cursor::Goto(1, 1));
-    }
-
-    fn flush(&mut self) {
-        self.screen.flush().unwrap();
-    }
-
-    fn write(&mut self, string: &str) {
-        write!(self.screen, "{}", string);
-    }
-}
 
 struct Walk {
     screen: Screen,
     cursor: Coord,
     key_map: HashMap<Key, Coord>,
     map: Vec<String>,
+}
+
+enum WalkState {
+    Continue,
+    Quit,
 }
 
 impl Walk {
@@ -114,20 +58,23 @@ impl Walk {
         self.draw();
         let stdin = stdin();
         for event in stdin.events() {
-            self.process_event(event.unwrap());
+            if let WalkState::Quit = self.process_event(event.unwrap()) {
+                return;
+            }
         }
     }
 
-    fn process_event(&mut self, event: Event) {
+    fn process_event(&mut self, event: Event) -> WalkState {
         match event {
             Event::Key(Key::Ctrl('c')) => {
-                std::process::exit(0);
+                return WalkState::Quit;
             }
             Event::Key(k) if self.key_map.contains_key(&k) => {
                 self.move_me(self.key_map[&k]);
             }
             _ => {}
         }
+        return WalkState::Continue;
     }
 
     fn draw(&mut self) {
