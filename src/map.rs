@@ -28,7 +28,7 @@ impl Map {
         let mut data = String::from("");
         for line in &self.map {
             for &t in line {
-                data += &t.tile;
+                data += &t.tile.image;
             }
             data += "\r\n";
         }

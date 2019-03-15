@@ -1,15 +1,16 @@
+use crate::tile::Tile;
 use std::collections::HashMap;
 use termion::color;
 
 pub struct Terrain {
-    pub tile: String,
+    pub tile: Tile,
     pub can_walk: bool,
 }
 
 impl Terrain {
     fn new<C: color::Color>(tile: char, color: C, can_walk: bool) -> Terrain {
         Terrain {
-            tile: format!("{}{}", color::Fg(color), tile),
+            tile: Tile::new(tile, color),
             can_walk: can_walk,
         }
     }
