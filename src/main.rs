@@ -1,7 +1,12 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate termion;
 mod coord;
+mod map;
 mod screen;
+mod terrain;
 use crate::coord::Coord;
+use crate::map::Map;
 use crate::screen::Screen;
 use std::collections::HashMap;
 use std::io::stdin;
@@ -12,7 +17,7 @@ struct Walk {
     screen: Screen,
     cursor: Coord,
     key_map: HashMap<Key, Coord>,
-    map: Vec<String>,
+    map: Map,
 }
 
 enum WalkState {
@@ -38,19 +43,19 @@ impl Walk {
                 .iter()
                 .cloned()
                 .collect(),
-            map: vec![
-                String::from("###############################################"),
-                String::from("#.............................................#"),
-                String::from("#....########.###.............................#"),
-                String::from("#....#.....#....#.............................#"),
-                String::from("#....#.....#....#.............................#"),
-                String::from("#....#.....#....#####.........................#"),
-                String::from("#....#.....#....#....#........................#"),
-                String::from("#....#######....#....#........................#"),
-                String::from("#..........###########........................#"),
-                String::from("#.............................................#"),
-                String::from("###############################################"),
-            ],
+            map: Map::new(vec![
+                "########################",
+                "#......................#",
+                "#....########.###......#",
+                "#....#..........#......#",
+                "#....#.xxx.#....#......#",
+                "#....#.xxx.#....#####..#",
+                "#....#.....#....#....#.#",
+                "#....##.####.........#.#",
+                "#...........##########.#",
+                "#......................#",
+                "########################",
+            ]),
         }
     }
 
@@ -85,10 +90,7 @@ impl Walk {
     }
 
     fn draw_map(&mut self) {
-        for line in &self.map {
-            self.screen.write(&line);
-            self.screen.write("\r\n");
-        }
+        self.screen.write(&self.map.image());
     }
 
     fn draw_me(&mut self) {
@@ -99,18 +101,10 @@ impl Walk {
 
     fn move_me(&mut self, direction: Coord) {
         let next = self.cursor + direction;
-        if self.can_walk(&next) {
+        if self.map.can_walk(&next) {
             self.cursor = next;
             self.draw();
         }
-    }
-
-    fn can_walk(&mut self, coord: &Coord) -> bool {
-        self.map[coord.y as usize]
-            .chars()
-            .nth(coord.x as usize)
-            .unwrap()
-            == '.'
     }
 }
 
