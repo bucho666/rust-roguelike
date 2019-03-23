@@ -6,6 +6,7 @@ mod map;
 mod screen;
 mod terrain;
 mod tile;
+mod ecs;
 use crate::coord::Coord;
 use crate::map::Map;
 use crate::screen::Screen;

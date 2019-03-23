@@ -21,12 +21,13 @@ impl Screen {
             self.screen,
             "{}",
             cursor::Goto(coord.x as u16 + 1, coord.y as u16 + 1)
-        );
+        )
+        .unwrap();
     }
 
     pub fn clear(&mut self) {
-        write!(self.screen, "{}", clear::All);
-        write!(self.screen, "{}", cursor::Goto(1, 1));
+        write!(self.screen, "{}", clear::All).unwrap();
+        write!(self.screen, "{}", cursor::Goto(1, 1)).unwrap();
     }
 
     pub fn flush(&mut self) {
@@ -34,6 +35,6 @@ impl Screen {
     }
 
     pub fn write(&mut self, string: &str) {
-        write!(self.screen, "{}", string);
+        write!(self.screen, "{}", string).unwrap();
     }
 }
