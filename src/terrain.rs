@@ -3,16 +3,24 @@ use std::collections::HashMap;
 use termion::color;
 
 pub struct Terrain {
-    pub tile: Tile,
-    pub can_walk: bool,
+    tile: Tile,
+    can_walk: bool,
 }
 
 impl Terrain {
-    fn new<C: color::Color>(tile: char, color: C, can_walk: bool) -> Terrain {
+    pub fn new<C: color::Color>(tile: char, color: C, can_walk: bool) -> Terrain {
         Terrain {
             tile: Tile::new(tile, color),
             can_walk: can_walk,
         }
+    }
+
+    pub fn image(&self) -> String {
+        self.tile.image()
+    }
+
+    pub fn can_walk(&self) -> bool {
+        self.can_walk
     }
 }
 

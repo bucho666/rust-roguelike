@@ -2,15 +2,17 @@
 extern crate lazy_static;
 extern crate termion;
 mod coord;
+mod entity;
 mod map;
 mod screen;
 mod terrain;
 mod tile;
-mod ecs;
 use crate::coord::Coord;
+use crate::entity::{EntityId, EntitySystem};
 use crate::map::Map;
 use crate::screen::Screen;
 use crate::tile::Tile;
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::io::stdin;
 use termion::color;
@@ -29,13 +31,22 @@ impl Object {
             coord: Coord::new(0, 0),
         }
     }
+
+    pub fn coord(&self) -> Coord {
+        self.coord
+    }
+
+    pub fn image(&self) -> String {
+        self.tile.image()
+    }
 }
 
 struct Walk {
     screen: Screen,
-    player: Object,
+    player: EntityId,
     key_map: HashMap<Key, Coord>,
     map: Map,
+    entity: EntitySystem,
 }
 
 enum WalkState {
@@ -47,7 +58,7 @@ impl Walk {
     fn new() -> Walk {
         Walk {
             screen: Screen::new(),
-            player: Object::new('@', color::White),
+            player: EntityId::new(1, TypeId::of::<Object>()),
             key_map: [
                 (Key::Char('j'), Coord::new(0, 1)),
                 (Key::Char('k'), Coord::new(0, -1)),
@@ -58,9 +69,9 @@ impl Walk {
                 (Key::Char('b'), Coord::new(-1, 1)),
                 (Key::Char('n'), Coord::new(1, 1)),
             ]
-                .iter()
-                .cloned()
-                .collect(),
+            .iter()
+            .cloned()
+            .collect(),
             map: Map::new(vec![
                 "########################",
                 "#......................#",
@@ -74,11 +85,13 @@ impl Walk {
                 "#......................#",
                 "########################",
             ]),
+            entity: EntitySystem::new(),
         }
     }
 
     fn run(&mut self) {
-        self.player.coord = Coord::new(1, 1);
+        self.player = self.entity.register(Object::new('@', color::White));
+        self.player().coord = Coord::new(1, 1);
         self.draw();
         let stdin = stdin();
         for event in stdin.events() {
@@ -113,15 +126,21 @@ impl Walk {
     }
 
     fn draw_player(&mut self) {
-        self.screen.goto(&self.player.coord);
-        self.screen.write(&self.player.tile.image);
-        self.screen.goto(&self.player.coord);
+        let coord = self.player().coord();
+        let image = self.player().image();
+        self.screen.goto(&coord);
+        self.screen.write(&image);
+        self.screen.goto(&coord);
+    }
+
+    fn player(&mut self) -> &mut Object {
+        self.entity.of_mut::<Object>(self.player)
     }
 
     fn move_player(&mut self, direction: Coord) {
-        let next = self.player.coord + direction;
+        let next = self.player().coord + direction;
         if self.map.can_walk(&next) {
-            self.player.coord = next;
+            self.player().coord = next;
             self.draw();
         }
     }

@@ -28,7 +28,7 @@ impl Map {
         let mut data = String::from("");
         for line in &self.map {
             for &t in line {
-                data += &t.tile.image;
+                data += &t.image();
             }
             data += "\r\n";
         }
@@ -36,6 +36,6 @@ impl Map {
     }
 
     pub fn can_walk(&mut self, coord: &Coord) -> bool {
-        self.map[coord.y as usize][coord.x as usize].can_walk
+        self.map[coord.y as usize][coord.x as usize].can_walk()
     }
 }

@@ -1,7 +1,7 @@
 use termion::color;
 
 pub struct Tile {
-    pub image: String,
+    image: String,
 }
 
 impl Tile {
@@ -9,5 +9,9 @@ impl Tile {
         Tile {
             image: format!("{}{}", color::Fg(color), tile),
         }
+    }
+
+    pub fn image(&self) -> String {
+        self.image.clone()
     }
 }
