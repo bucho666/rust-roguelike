@@ -20,19 +20,13 @@ use termion::input::TermRead;
 
 struct Object {
     tile: Tile,
-    coord: Coord,
 }
 
 impl Object {
     pub fn new<C: color::Color>(tile: char, color: C) -> Object {
         Object {
             tile: Tile::new(tile, color),
-            coord: Coord::new(0, 0),
         }
-    }
-
-    pub fn coord(&self) -> Coord {
-        self.coord
     }
 
     pub fn image(&self) -> String {
@@ -70,9 +64,9 @@ impl Walk {
                 (Key::Char('b'), Coord::new(-1, 1)),
                 (Key::Char('n'), Coord::new(1, 1)),
             ]
-                .iter()
-                .cloned()
-                .collect(),
+            .iter()
+            .cloned()
+            .collect(),
             map: Map::new(vec![
                 "########################",
                 "#......................#",
@@ -91,12 +85,12 @@ impl Walk {
     }
 
     fn run(&mut self) {
-        self.player().coord = Coord::new(1, 1);
-        self.map.add_entity(self.player);
+        self.map.add_entity(self.player, Coord::new(1, 1));
         for i in 0..3 {
-            let orc = self.entity.register(Object::new('o', color::Green));
-            self.entity.of_mut::<Object>(orc).coord = Coord::new(3, 6 + i);
-            self.map.add_entity(orc);
+            self.map.add_entity(
+                self.entity.register(Object::new('o', color::Green)),
+                Coord::new(3, 6 + i),
+            );
         }
         self.draw();
         let stdin = stdin();
@@ -129,21 +123,15 @@ impl Walk {
 
     fn draw_map(&mut self) {
         self.screen.write(&self.map.image());
-        for o in self.map.entities::<Object>() {
-            let coord = self.object(o).coord();
-            let image = self.object(o).image();
+        for (coord, id) in self.map.entities() {
+            let image = self.object(id).image();
             self.screen.goto(&coord);
             self.screen.write(&image);
         }
     }
 
     fn draw_player(&mut self) {
-        let coord = self.player().coord();
-        self.screen.goto(&coord);
-    }
-
-    fn player(&mut self) -> &mut Object {
-        self.object(self.player)
+        self.screen.goto(&self.map.coord_of(self.player));
     }
 
     fn object(&mut self, id: EntityId) -> &mut Object {
@@ -151,9 +139,9 @@ impl Walk {
     }
 
     fn move_player(&mut self, direction: Coord) {
-        let next = self.player().coord + direction;
-        if self.map.can_walk(&next) {
-            self.player().coord = next;
+        let to = self.map.coord_of(self.player) + direction;
+        if self.map.can_walk(&to) {
+            self.map.move_entity(self.player, to);
             self.draw();
         }
     }

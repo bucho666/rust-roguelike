@@ -1,12 +1,61 @@
 use crate::coord::Coord;
 use crate::entity::EntityId;
 use crate::terrain::{Terrain, TERRAIN};
-use std::any::{Any, TypeId};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::hash::Hash;
+
+pub struct MutualHashMap<K, V> {
+    vmap: HashMap<K, V>,
+    kmap: HashMap<V, K>,
+}
+
+impl<K: Hash + Eq + Copy + Clone, V: Hash + Eq + Copy + Clone> MutualHashMap<K, V> {
+    pub fn new() -> Self {
+        MutualHashMap {
+            vmap: HashMap::new(),
+            kmap: HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, key: K, value: V) {
+        self.vmap.insert(key, value);
+        self.kmap.insert(value, key);
+    }
+
+    pub fn value(&self, key: K) -> V {
+        self.vmap[&key]
+    }
+
+    pub fn key(&self, key: V) -> K {
+        self.kmap[&key]
+    }
+
+    pub fn contains_key(&self, key: K) -> bool {
+        self.vmap.contains_key(&key)
+    }
+
+    pub fn values(&self) -> Vec<V> {
+        self.vmap.values().map(|v| *v).collect()
+    }
+
+    pub fn entries(&self) -> Vec<(K, V)> {
+        self.vmap.iter().map(|(k, v)| (*k, *v)).collect()
+    }
+
+    pub fn remove_by_key(&mut self, key: K) {
+        self.kmap.remove(&self.value(key));
+        self.vmap.remove(&key);
+    }
+
+    pub fn remove_by_value(&mut self, value: V) {
+        self.vmap.remove(&self.key(value));
+        self.kmap.remove(&value);
+    }
+}
 
 pub struct Map {
     map: Vec<Vec<&'static Terrain>>,
-    entities: HashMap<TypeId, HashSet<EntityId>>,
+    entities: MutualHashMap<Coord, EntityId>,
 }
 
 impl Map {
@@ -26,23 +75,25 @@ impl Map {
         }
         Map {
             map: map_data,
-            entities: HashMap::new(),
+            entities: MutualHashMap::new(),
         }
     }
 
-    pub fn add_entity(&mut self, id: EntityId) {
-        let type_id = id.type_id();
-        if !self.entities.contains_key(&type_id) {
-            self.entities.insert(type_id, HashSet::new());
-        }
-        self.entities.get_mut(&type_id).unwrap().insert(id);
+    pub fn move_entity(&mut self, id: EntityId, to: Coord) {
+        self.entities.remove_by_value(id);
+        self.entities.insert(to, id);
     }
 
-    pub fn entities<T: Any>(&self) -> Vec<EntityId> {
-        self.entities[&TypeId::of::<T>()]
-            .clone()
-            .into_iter()
-            .collect()
+    pub fn add_entity(&mut self, id: EntityId, coord: Coord) {
+        self.entities.insert(coord, id);
+    }
+
+    pub fn entities(&self) -> Vec<(Coord, EntityId)> {
+        self.entities.entries()
+    }
+
+    pub fn coord_of(&self, id: EntityId) -> Coord {
+        self.entities.key(id)
     }
 
     pub fn image(&self) -> String {
