@@ -12,7 +12,6 @@ use crate::entity::{EntityId, EntitySystem};
 use crate::map::Map;
 use crate::screen::Screen;
 use crate::tile::Tile;
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::io::stdin;
 use termion::color;
@@ -56,9 +55,11 @@ enum WalkState {
 
 impl Walk {
     fn new() -> Walk {
+        let mut ecs = EntitySystem::new();
+        let player = ecs.register(Object::new('@', color::White));
         Walk {
             screen: Screen::new(),
-            player: EntityId::new(1, TypeId::of::<Object>()),
+            player: player,
             key_map: [
                 (Key::Char('j'), Coord::new(0, 1)),
                 (Key::Char('k'), Coord::new(0, -1)),
@@ -69,9 +70,9 @@ impl Walk {
                 (Key::Char('b'), Coord::new(-1, 1)),
                 (Key::Char('n'), Coord::new(1, 1)),
             ]
-            .iter()
-            .cloned()
-            .collect(),
+                .iter()
+                .cloned()
+                .collect(),
             map: Map::new(vec![
                 "########################",
                 "#......................#",
@@ -85,13 +86,18 @@ impl Walk {
                 "#......................#",
                 "########################",
             ]),
-            entity: EntitySystem::new(),
+            entity: ecs,
         }
     }
 
     fn run(&mut self) {
-        self.player = self.entity.register(Object::new('@', color::White));
         self.player().coord = Coord::new(1, 1);
+        self.map.add_entity(self.player);
+        for i in 0..3 {
+            let orc = self.entity.register(Object::new('o', color::Green));
+            self.entity.of_mut::<Object>(orc).coord = Coord::new(3, 6 + i);
+            self.map.add_entity(orc);
+        }
         self.draw();
         let stdin = stdin();
         for event in stdin.events() {
@@ -123,18 +129,25 @@ impl Walk {
 
     fn draw_map(&mut self) {
         self.screen.write(&self.map.image());
+        for o in self.map.entities::<Object>() {
+            let coord = self.object(o).coord();
+            let image = self.object(o).image();
+            self.screen.goto(&coord);
+            self.screen.write(&image);
+        }
     }
 
     fn draw_player(&mut self) {
         let coord = self.player().coord();
-        let image = self.player().image();
-        self.screen.goto(&coord);
-        self.screen.write(&image);
         self.screen.goto(&coord);
     }
 
     fn player(&mut self) -> &mut Object {
-        self.entity.of_mut::<Object>(self.player)
+        self.object(self.player)
+    }
+
+    fn object(&mut self, id: EntityId) -> &mut Object {
+        self.entity.of_mut::<Object>(id)
     }
 
     fn move_player(&mut self, direction: Coord) {

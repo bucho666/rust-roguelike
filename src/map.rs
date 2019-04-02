@@ -1,9 +1,12 @@
 use crate::coord::Coord;
-use crate::terrain::Terrain;
-use crate::terrain::TERRAIN;
+use crate::entity::EntityId;
+use crate::terrain::{Terrain, TERRAIN};
+use std::any::{Any, TypeId};
+use std::collections::{HashMap, HashSet};
 
 pub struct Map {
     map: Vec<Vec<&'static Terrain>>,
+    entities: HashMap<TypeId, HashSet<EntityId>>,
 }
 
 impl Map {
@@ -21,7 +24,25 @@ impl Map {
             }
             map_data.push(terrain_line);
         }
-        Map { map: map_data }
+        Map {
+            map: map_data,
+            entities: HashMap::new(),
+        }
+    }
+
+    pub fn add_entity(&mut self, id: EntityId) {
+        let type_id = id.type_id();
+        if !self.entities.contains_key(&type_id) {
+            self.entities.insert(type_id, HashSet::new());
+        }
+        self.entities.get_mut(&type_id).unwrap().insert(id);
+    }
+
+    pub fn entities<T: Any>(&self) -> Vec<EntityId> {
+        self.entities[&TypeId::of::<T>()]
+            .clone()
+            .into_iter()
+            .collect()
     }
 
     pub fn image(&self) -> String {
