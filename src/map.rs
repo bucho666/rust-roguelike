@@ -55,7 +55,7 @@ impl<K: Hash + Eq + Copy + Clone, V: Hash + Eq + Copy + Clone> MutualHashMap<K, 
 
 pub struct Map {
     map: Vec<Vec<&'static Terrain>>,
-    entities: MutualHashMap<Coord, EntityId>,
+    character: MutualHashMap<Coord, EntityId>,
 }
 
 impl Map {
@@ -75,32 +75,36 @@ impl Map {
         }
         Map {
             map: map_data,
-            entities: MutualHashMap::new(),
+            character: MutualHashMap::new(),
         }
     }
 
-    pub fn move_entity(&mut self, id: EntityId, to: Coord) {
-        self.entities.remove_by_value(id);
-        self.entities.insert(to, id);
+    pub fn remove_character(&mut self, id: EntityId) {
+        self.character.remove_by_value(id);
     }
 
-    pub fn add_entity(&mut self, id: EntityId, coord: Coord) {
-        self.entities.insert(coord, id);
+    pub fn move_character(&mut self, id: EntityId, to: Coord) {
+        self.remove_character(id);
+        self.character.insert(to, id);
     }
 
-    pub fn entity_at(&self, coord: Coord) -> Option<EntityId> {
-        if let Some(e) = self.entities.value(coord) {
+    pub fn add_character(&mut self, id: EntityId, coord: Coord) {
+        self.character.insert(coord, id);
+    }
+
+    pub fn character_at(&self, coord: Coord) -> Option<EntityId> {
+        if let Some(e) = self.character.value(coord) {
             return Some(*e);
         }
         None
     }
 
-    pub fn entities(&self) -> Vec<(Coord, EntityId)> {
-        self.entities.entries()
+    pub fn characters(&self) -> Vec<(Coord, EntityId)> {
+        self.character.entries()
     }
 
     pub fn coord_of(&self, id: EntityId) -> Coord {
-        self.entities.key(id)
+        self.character.key(id)
     }
 
     pub fn image(&self) -> String {
@@ -119,9 +123,6 @@ impl Map {
     }
 
     pub fn can_walk(&mut self, coord: Coord) -> bool {
-        if let None = self.entity_at(coord) {
-            return self.terrain_at(coord).can_walk();
-        }
-        false
+        self.terrain_at(coord).can_walk()
     }
 }

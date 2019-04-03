@@ -1,6 +1,7 @@
 use crate::coord::Coord;
 use std::io::{stdout, Stdout, Write};
 use termion::clear;
+use termion::color;
 use termion::cursor;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
@@ -16,7 +17,7 @@ impl Screen {
         }
     }
 
-    pub fn goto(&mut self, coord: &Coord) {
+    pub fn goto(&mut self, coord: Coord) {
         write!(
             self.screen,
             "{}",
@@ -36,5 +37,11 @@ impl Screen {
 
     pub fn write(&mut self, string: &str) {
         write!(self.screen, "{}", string).unwrap();
+    }
+
+    pub fn reset(&mut self) {
+        write!(self.screen, "{}", color::Fg(color::Reset)).unwrap();
+        self.clear();
+        self.flush();
     }
 }

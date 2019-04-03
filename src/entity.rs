@@ -30,4 +30,8 @@ impl EntitySystem {
     pub fn of_mut<T: Any>(&mut self, id: EntityId) -> &mut T {
         self.entities.get_mut(&id).unwrap().downcast_mut().unwrap()
     }
+
+    pub fn remove(&mut self, id: EntityId) {
+        self.entities.remove(&id);
+    }
 }
