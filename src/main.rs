@@ -64,9 +64,9 @@ impl Walk {
                 (Key::Char('b'), Coord::new(-1, 1)),
                 (Key::Char('n'), Coord::new(1, 1)),
             ]
-            .iter()
-            .cloned()
-            .collect(),
+                .iter()
+                .cloned()
+                .collect(),
             map: Map::new(vec![
                 "########################",
                 "#......................#",
@@ -140,7 +140,7 @@ impl Walk {
 
     fn move_player(&mut self, direction: Coord) {
         let to = self.map.coord_of(self.player) + direction;
-        if self.map.can_walk(&to) {
+        if self.map.can_walk(to) {
             self.map.move_entity(self.player, to);
             self.draw();
         }

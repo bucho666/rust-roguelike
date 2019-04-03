@@ -22,30 +22,30 @@ impl<K: Hash + Eq + Copy + Clone, V: Hash + Eq + Copy + Clone> MutualHashMap<K, 
         self.kmap.insert(value, key);
     }
 
-    pub fn value(&self, key: K) -> V {
-        self.vmap[&key]
+    pub fn value(&self, key: K) -> Option<&V> {
+        self.vmap.get(&key)
     }
 
     pub fn key(&self, key: V) -> K {
         self.kmap[&key]
     }
 
-    pub fn contains_key(&self, key: K) -> bool {
-        self.vmap.contains_key(&key)
-    }
+    //pub fn contains_key(&self, key: K) -> bool {
+    //    self.vmap.contains_key(&key)
+    //}
 
-    pub fn values(&self) -> Vec<V> {
-        self.vmap.values().map(|v| *v).collect()
-    }
+    //pub fn values(&self) -> Vec<V> {
+    //    self.vmap.values().map(|v| *v).collect()
+    //}
 
     pub fn entries(&self) -> Vec<(K, V)> {
         self.vmap.iter().map(|(k, v)| (*k, *v)).collect()
     }
 
-    pub fn remove_by_key(&mut self, key: K) {
-        self.kmap.remove(&self.value(key));
-        self.vmap.remove(&key);
-    }
+    //pub fn remove_by_key(&mut self, key: K) {
+    //    self.kmap.remove(&self.value(key));
+    //    self.vmap.remove(&key);
+    //}
 
     pub fn remove_by_value(&mut self, value: V) {
         self.vmap.remove(&self.key(value));
@@ -88,6 +88,13 @@ impl Map {
         self.entities.insert(coord, id);
     }
 
+    pub fn entity_at(&self, coord: Coord) -> Option<EntityId> {
+        if let Some(e) = self.entities.value(coord) {
+            return Some(*e);
+        }
+        None
+    }
+
     pub fn entities(&self) -> Vec<(Coord, EntityId)> {
         self.entities.entries()
     }
@@ -107,7 +114,14 @@ impl Map {
         data
     }
 
-    pub fn can_walk(&mut self, coord: &Coord) -> bool {
-        self.map[coord.y as usize][coord.x as usize].can_walk()
+    pub fn terrain_at(&self, coord: Coord) -> &Terrain {
+        self.map[coord.y as usize][coord.x as usize]
+    }
+
+    pub fn can_walk(&mut self, coord: Coord) -> bool {
+        if let None = self.entity_at(coord) {
+            return self.terrain_at(coord).can_walk();
+        }
+        false
     }
 }
