@@ -1,13 +1,16 @@
 #[macro_use]
 extern crate lazy_static;
+extern crate rand;
 extern crate termion;
 mod coord;
+mod direction;
 mod entity;
 mod map;
 mod screen;
 mod terrain;
 mod tile;
 use crate::coord::Coord;
+use crate::direction::*;
 use crate::entity::{EntityId, EntitySystem};
 use crate::map::Map;
 use crate::screen::Screen;
@@ -55,14 +58,14 @@ impl Walk {
             screen: Screen::new(),
             player: player,
             key_map: [
-                (Key::Char('j'), Coord::new(0, 1)),
-                (Key::Char('k'), Coord::new(0, -1)),
-                (Key::Char('l'), Coord::new(1, 0)),
-                (Key::Char('h'), Coord::new(-1, 0)),
-                (Key::Char('y'), Coord::new(-1, -1)),
-                (Key::Char('u'), Coord::new(1, -1)),
-                (Key::Char('b'), Coord::new(-1, 1)),
-                (Key::Char('n'), Coord::new(1, 1)),
+                (Key::Char('j'), S),
+                (Key::Char('k'), N),
+                (Key::Char('l'), E),
+                (Key::Char('h'), W),
+                (Key::Char('y'), NW),
+                (Key::Char('u'), NE),
+                (Key::Char('b'), SW),
+                (Key::Char('n'), SE),
             ]
                 .iter()
                 .cloned()
@@ -108,6 +111,8 @@ impl Walk {
             }
             Event::Key(k) if self.key_map.contains_key(&k) => {
                 self.move_player(self.key_map[&k]);
+                self.move_monsters();
+                self.draw();
             }
             _ => {}
         }
@@ -139,10 +144,21 @@ impl Walk {
     }
 
     fn move_player(&mut self, direction: Coord) {
-        let to = self.map.coord_of(self.player) + direction;
+        self.move_entity(self.player, direction);
+    }
+
+    fn move_entity(&mut self, entity: EntityId, direction: Coord) {
+        let to = self.map.coord_of(entity) + direction;
         if self.map.can_walk(to) {
-            self.map.move_entity(self.player, to);
-            self.draw();
+            self.map.move_entity(entity, to);
+        }
+    }
+
+    fn move_monsters(&mut self) {
+        for (_, id) in self.map.entities() {
+            if id != self.player {
+                self.move_entity(id, random_direction());
+            }
         }
     }
 }
