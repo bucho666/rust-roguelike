@@ -1,8 +1,10 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate rand;
+extern crate regex;
 extern crate termion;
 mod coord;
+mod dice;
 mod direction;
 mod entity;
 mod map;
@@ -25,6 +27,7 @@ use termion::input::TermRead;
 struct Character {
     tile: Tile,
     name: String,
+    hp: i32,
 }
 
 impl Character {
@@ -32,6 +35,7 @@ impl Character {
         Character {
             tile: Tile::new(tile, color),
             name: name.to_string(),
+            hp: 3,
         }
     }
 
@@ -41,6 +45,14 @@ impl Character {
 
     pub fn name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn damage(&mut self, damage: i32) {
+        self.hp -= damage;
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.hp <= 0
     }
 }
 
@@ -138,9 +150,9 @@ impl Walk {
                 (Key::Char('b'), SW),
                 (Key::Char('n'), SE),
             ]
-                .iter()
-                .cloned()
-                .collect(),
+            .iter()
+            .cloned()
+            .collect(),
             world: world,
             message: String::new(),
         }
@@ -236,9 +248,7 @@ impl Walk {
     fn move_player(&mut self, direction: Coord) {
         match self.move_character(self.player, direction) {
             MoveResult::BlockCharacter(m) => {
-                let name = self.world.character(m).name();
-                self.push_message(&format!("kill {}", name), color::Red);
-                self.world.kill(m, self.map);
+                self.attack_monster(m);
             }
             MoveResult::Blocked => {
                 return;
@@ -246,6 +256,17 @@ impl Walk {
             _ => {}
         }
         self.next_turn();
+    }
+
+    fn attack_monster(&mut self, monster: EntityId) {
+        let name = self.world.character(monster).name();
+        self.world.character(monster).damage(1);
+        if self.world.character(monster).is_dead() {
+            self.push_message(&format!("kill {}", name), color::Red);
+            self.world.kill(monster, self.map);
+        } else {
+            self.push_message(&format!("hit to {}", name), color::Red);
+        }
     }
 
     fn move_monsters(&mut self) {
